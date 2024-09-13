@@ -1,0 +1,37 @@
+name: VMess Config Processing
+
+on:
+  schedule:
+    - cron: '0 */13 * * *'  # Runs every 13 hours
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  process-configs:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.1.2
+
+    - name: Set up environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq curl
+
+    - name: Run config processing script
+      run: |
+        chmod +x ./aggregator-filter.sh
+        ./aggregator-filter.sh
+
+    - name: Commit and push if changes
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add -A
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update processed configs [skip ci]"
+          git push
+        fi
